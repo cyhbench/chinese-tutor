@@ -847,8 +847,9 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
   <header id="header">
     <div class="h-logo">
       <div class="h-char">漢</div>
-      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v2.0</span>
+      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v2.1</span>
     </div>
+    <button id="btn-debug" class="icon-btn" onclick="toggleDebug()" style="font-size:13px;color:var(--text-dim)">DEBUG</button>
     <button id="btn-open-settings" class="icon-btn" title="設定">⚙️</button>
   </header>
 
@@ -993,6 +994,7 @@ let audioChunks = [];
 let micStream = null;
 let practiceText = null;
 let currentAudio = null;
+let debugMode = false;
 
 // ─── Storage ──────────────────────────────────────────────────
 function getSettings() {
@@ -1277,7 +1279,7 @@ async function onGetSentence() {
 function showPracResult(recognizedText, pronData, debugMsg) {
   const container = document.getElementById('prac-result');
   const s = getSettings();
-  const noScoreMsg = debugMsg
+  const noScoreMsg = (debugMode && debugMsg)
     ? `<p style="font-size:12px;color:var(--text-dim);margin-top:6px">[診斷] ${escHtml(debugMsg)}</p>`
     : `<p style="font-size:13px;color:var(--text-dim)">（Azure Key ${s.azureKey ? '已設定但未返回評分' : '未設定'}）</p>`;
   container.innerHTML = `
@@ -1337,19 +1339,19 @@ async function handleAudioBlob(blob, mimeType) {
 
   // 診斷資訊
   const debugInfo = `[診斷] 音檔大小：${blob.size} bytes｜格式：${mimeType}｜Azure：${s.azureKey ? '有' : '無'}`;
-  appendBubble('sys', debugInfo, null);
+  if (debugMode) appendBubble('sys', debugInfo, null);
 
   try {
     const isPractice = currentTab === 'practice' && practiceText;
     let result = null;
     if (s.azureKey) {
-      appendBubble('sys', '[診斷] 送出至 Azure...', null);
+      if (debugMode) appendBubble('sys', '[診斷] 送出至 Azure...', null);
       result = await azureSTT(blob, mimeType, s, isPractice ? practiceText : '');
       appendBubble('sys', `[診斷] Azure 回傳文字：「${result.text || '（空）'}」`, null);
       recognizedText = result.text;
       pronData = result.pron;
     } else {
-      appendBubble('sys', '[診斷] 送出至 Whisper...', null);
+      if (debugMode) appendBubble('sys', '[診斷] 送出至 Whisper...', null);
       recognizedText = await whisperSTT(blob, mimeType, s);
       appendBubble('sys', `[診斷] Whisper 回傳：「${recognizedText || '（空）'}」`, null);
     }
@@ -1485,12 +1487,13 @@ async function azureSTT(blob, mimeType, s, refText) {
   // 1. best.PronunciationAssessment（標準結構）
   // 2. AccuracyScore 直接在 best 上（部分版本）
   const pronSrc = pa || (best?.AccuracyScore != null ? best : null);
+  const fluency = best?.FluencyScore ?? pa?.FluencyScore ?? 0;
 
   let pronResult = null;
   if (pronSrc) {
     pronResult = {
       accuracyScore: pronSrc.AccuracyScore ?? pronSrc.accuracyScore ?? 0,
-      fluencyScore: pronSrc.FluencyScore ?? pronSrc.fluencyScore ?? 0,
+      fluencyScore: fluency,
       completenessScore: pronSrc.CompletenessScore ?? 0,
       pronScore: pronSrc.PronScore ?? pronSrc.AccuracyScore ?? 0,
       words: (best.Words || []).map(w => ({
@@ -1572,7 +1575,16 @@ async function chatWithGPT(userText) {
 }
 
 // ─── TTS ──────────────────────────────────────────────────────
+function stripForTTS(text) {
+  return text
+    .replace(/[\u2600-\u27BF\uFE00-\uFE0F]/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 async function speakText(text) {
+  if (!text) return;
+  text = stripForTTS(text);
   if (!text) return;
   // Stop previous audio
   if (currentAudio) { currentAudio.pause(); currentAudio = null; }
@@ -1651,6 +1663,13 @@ function scoreColor(s) {
 }
 
 // ─── UI Helpers ───────────────────────────────────────────────
+function toggleDebug() {
+  debugMode = !debugMode;
+  const btn = document.getElementById("btn-debug");
+  btn.style.color = debugMode ? "var(--gold)" : "var(--text-dim)";
+  showToast(debugMode ? "診斷模式已開啟" : "診斷模式已關閉");
+}
+
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
