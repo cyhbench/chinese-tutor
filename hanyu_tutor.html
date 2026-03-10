@@ -847,7 +847,7 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
   <header id="header">
     <div class="h-logo">
       <div class="h-char">漢</div>
-      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v1.2</span>
+      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v1.3</span>
     </div>
     <button id="btn-open-settings" class="icon-btn" title="設定">⚙️</button>
   </header>
@@ -1332,6 +1332,10 @@ async function handleAudioBlob(blob, mimeType) {
   let recognizedText = null;
   let pronData = null;
 
+  // 診斷資訊
+  const debugInfo = `[診斷] 音檔大小：${blob.size} bytes｜格式：${mimeType}｜Azure：${s.azureKey ? '有' : '無'}`;
+  appendBubble('sys', debugInfo, null);
+
   try {
     const isPractice = currentTab === 'practice' && practiceText;
     if (s.azureKey) {
@@ -1343,7 +1347,7 @@ async function handleAudioBlob(blob, mimeType) {
     }
 
     if (!recognizedText || !recognizedText.trim()) {
-      appendBubble('sys', '⚠️ 未能辨識語音，請靠近麥克風後再試一次', null);
+      appendBubble('sys', '⚠️ 未能辨識語音（音檔已收到但內容為空）', null);
       return;
     }
 
