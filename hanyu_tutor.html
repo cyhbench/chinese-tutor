@@ -847,7 +847,7 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
   <header id="header">
     <div class="h-logo">
       <div class="h-char">漢</div>
-      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v1.9</span>
+      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v2.0</span>
     </div>
     <button id="btn-open-settings" class="icon-btn" title="設定">⚙️</button>
   </header>
@@ -1481,20 +1481,30 @@ async function azureSTT(blob, mimeType, s, refText) {
   const pa = best?.PronunciationAssessment;
   const bestKeys = best ? Object.keys(best).join(', ') : '無';
 
-  return {
-    text: data.DisplayText || best?.Display || '',
-    debug: `辨識狀態：${data.RecognitionStatus}｜有評分：${pa ? '是' : '否'}｜欄位：${bestKeys.slice(0,60)}`,
-    pron: pa ? {
-      accuracyScore: pa.AccuracyScore,
-      fluencyScore: pa.FluencyScore,
-      completenessScore: pa.CompletenessScore,
-      pronScore: pa.PronScore,
+  // Azure 回傳結構有兩種：
+  // 1. best.PronunciationAssessment（標準結構）
+  // 2. AccuracyScore 直接在 best 上（部分版本）
+  const pronSrc = pa || (best?.AccuracyScore != null ? best : null);
+
+  let pronResult = null;
+  if (pronSrc) {
+    pronResult = {
+      accuracyScore: pronSrc.AccuracyScore ?? pronSrc.accuracyScore ?? 0,
+      fluencyScore: pronSrc.FluencyScore ?? pronSrc.fluencyScore ?? 0,
+      completenessScore: pronSrc.CompletenessScore ?? 0,
+      pronScore: pronSrc.PronScore ?? pronSrc.AccuracyScore ?? 0,
       words: (best.Words || []).map(w => ({
         word: w.Word,
-        accuracyScore: w.PronunciationAssessment?.AccuracyScore ?? 0,
-        errorType: w.PronunciationAssessment?.ErrorType || 'None',
+        accuracyScore: w.PronunciationAssessment?.AccuracyScore ?? w.AccuracyScore ?? 0,
+        errorType: w.PronunciationAssessment?.ErrorType || w.ErrorType || 'None',
       })),
-    } : null,
+    };
+  }
+
+  return {
+    text: data.DisplayText || best?.Display || '',
+    debug: `辨識狀態：${data.RecognitionStatus}｜有評分：${pronResult ? '是' : '否'}｜欄位：${bestKeys.slice(0,60)}`,
+    pron: pronResult,
   };
 }
 
