@@ -821,13 +821,11 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
 
       <div class="field-group">
         <label class="field-label">語言偏好</label>
-        <div class="radio-row">
-          <label class="radio-item">
-            <input type="radio" name="setup-lang" value="zh-TW" checked> 繁體中文
-          </label>
-          <label class="radio-item">
-            <input type="radio" name="setup-lang" value="zh-CN"> 簡體中文
-          </label>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <label class="radio-item"><input type="radio" name="setup-lang" value="zh-TW" checked> 🇹🇼 繁體中文</label>
+          <label class="radio-item"><input type="radio" name="setup-lang" value="zh-CN"> 🇨🇳 簡體中文</label>
+          <label class="radio-item"><input type="radio" name="setup-lang" value="en-US"> 🇺🇸 English</label>
+          <label class="radio-item"><input type="radio" name="setup-lang" value="th-TH"> 🇹🇭 ภาษาไทย</label>
         </div>
       </div>
 
@@ -847,7 +845,7 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
   <header id="header">
     <div class="h-logo">
       <div class="h-char">漢</div>
-      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v2.1</span>
+      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v2.2</span>
     </div>
     <button id="btn-debug" class="icon-btn" onclick="toggleDebug()" style="font-size:13px;color:var(--text-dim)">DEBUG</button>
     <button id="btn-open-settings" class="icon-btn" title="設定">⚙️</button>
@@ -955,9 +953,11 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
     </div>
     <div class="field-group">
       <label class="field-label">語言偏好</label>
-      <div class="radio-row">
-        <label class="radio-item"><input type="radio" name="set-lang" value="zh-TW"> 繁體中文</label>
-        <label class="radio-item"><input type="radio" name="set-lang" value="zh-CN"> 簡體中文</label>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        <label class="radio-item"><input type="radio" name="set-lang" value="zh-TW"> 🇹🇼 繁體中文</label>
+        <label class="radio-item"><input type="radio" name="set-lang" value="zh-CN"> 🇨🇳 簡體中文</label>
+        <label class="radio-item"><input type="radio" name="set-lang" value="en-US"> 🇺🇸 English</label>
+        <label class="radio-item"><input type="radio" name="set-lang" value="th-TH"> 🇹🇭 ภาษาไทย</label>
       </div>
     </div>
     <button class="btn-primary" id="btn-save-settings">儲存設定</button>
@@ -976,13 +976,61 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
 // ─── Constants ────────────────────────────────────────────────
 const DB = 'hyt_';
 
-const SYSTEM_PROMPT = `你是小雅，一位親切、耐心的中文口語教師。你的任務：
-• 用中文與學習者自然對話，幫助練習口語和日常表達
+const LANG_CONFIG = {
+  'zh-TW': {
+    label: '中文',
+    flag: '🇹🇼',
+    sttLang: 'zh-TW',
+    ttsVoice: 'shimmer',
+    azureTTSVoice: 'zh-TW-HsiaoChenNeural',
+    systemPrompt: `你是小雅，一位親切、耐心的中文口語教師。你的任務：
+• 用繁體中文與學習者自然對話，幫助練習口語和日常表達
 • 溫和糾正語法、用詞錯誤，並示範正確說法
 • 每次回應簡短自然（2-4句），符合口語節奏
 • 主動提問引導對話繼續
-• 若對方說英文，用中文回應並溫和鼓勵他們也用中文試試
-• 請用繁體中文回應（若設定為簡體中文則用簡體）`;
+• 若對方說英文，用中文回應並溫和鼓勵他們也用中文試試`,
+  },
+  'zh-CN': {
+    label: '中文',
+    flag: '🇨🇳',
+    sttLang: 'zh-CN',
+    ttsVoice: 'shimmer',
+    azureTTSVoice: 'zh-CN-XiaoxiaoNeural',
+    systemPrompt: `你是小雅，一位亲切、耐心的中文口语教师。你的任务：
+• 用简体中文与学习者自然对话，帮助练习口语和日常表达
+• 温和纠正语法、用词错误，并示范正确说法
+• 每次回应简短自然（2-4句），符合口语节奏
+• 主动提问引导对话继续`,
+  },
+  'en-US': {
+    label: 'English',
+    flag: '🇺🇸',
+    sttLang: 'en-US',
+    ttsVoice: 'nova',
+    azureTTSVoice: 'en-US-JennyNeural',
+    systemPrompt: `You are Aria, a friendly and patient English conversation tutor. Your tasks:
+• Have natural conversations to help learners practice English speaking and daily expressions
+• Gently correct grammar and word choice, and show the correct form
+• Keep responses short and natural (2-4 sentences), matching conversational rhythm
+• Ask follow-up questions to keep the conversation going
+• If the learner writes in their native language, respond in English and encourage them to try in English too`,
+  },
+  'th-TH': {
+    label: 'ภาษาไทย',
+    flag: '🇹🇭',
+    sttLang: 'th-TH',
+    ttsVoice: 'nova',
+    azureTTSVoice: 'th-TH-PremwadeeNeural',
+    systemPrompt: `คุณคือ นุ่น ครูสอนภาษาไทยที่เป็นมิตรและอดทน หน้าที่ของคุณ:
+• สนทนาภาษาไทยอย่างเป็นธรรมชาติกับผู้เรียน
+• แก้ไขไวยากรณ์และคำศัพท์อย่างสุภาพ พร้อมแสดงตัวอย่างที่ถูกต้อง
+• ตอบสั้นและเป็นธรรมชาติ (2-4 ประโยค)
+• ถามคำถามเพื่อดำเนินการสนทนาต่อ
+• หากผู้เรียนพูดภาษาอื่น ให้ตอบเป็นภาษาไทยและกระตุ้นให้ลองพูดภาษาไทย`,
+  },
+};
+
+LANG_CONFIG['zh-TW'].systemPrompt; // replaced by getLangConfig().systemPrompt at runtime
 
 // ─── State ────────────────────────────────────────────────────
 let currentTab = 'chat';
@@ -995,6 +1043,12 @@ let micStream = null;
 let practiceText = null;
 let currentAudio = null;
 let debugMode = false;
+
+// ─── Lang helpers ─────────────────────────────────────────────
+function getLangConfig() {
+  const s = getSettings();
+  return LANG_CONFIG[s.lang] || LANG_CONFIG['zh-TW'];
+}
 
 // ─── Storage ──────────────────────────────────────────────────
 function getSettings() {
@@ -1059,6 +1113,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function showApp() {
   showScreen('screen-app');
+  updateHeader();
   if (chatMessages.length === 0) {
     const welcome = '你好！我是小雅，你的中文口語練習夥伴 😊 你今天想聊什麼，或練習哪方面的中文呢？';
     appendBubble('ai', welcome, null);
@@ -1110,8 +1165,10 @@ function onSaveSettings() {
     azureRegion: document.getElementById('set-azure-region').value,
     lang: document.querySelector('input[name="set-lang"]:checked').value,
   });
+  chatMessages = []; // reset chat on lang change
   closeSettings();
-  showToast('設定已儲存');
+  updateHeader();
+  showToast('設定已儲存，對話已重置');
 }
 
 function confirmClearHistory() {
@@ -1431,7 +1488,7 @@ async function convertToWav(blob) {
 
 // ─── Azure STT + Pronunciation ───────────────────────────────
 async function azureSTT(blob, mimeType, s, refText) {
-  const lang = s.lang || 'zh-TW';
+  const lang = (LANG_CONFIG[s.lang] || LANG_CONFIG['zh-TW']).sttLang;
   const region = s.azureRegion || 'eastasia';
 
   // 轉成 WAV 確保 Azure 相容
@@ -1504,9 +1561,15 @@ async function azureSTT(blob, mimeType, s, refText) {
     };
   }
 
+  // Deep-search FluencyScore anywhere in response
+  const rawJson = JSON.stringify(data);
+  const fluencyMatch = rawJson.match(/"FluencyScore"\s*:\s*([\d.]+)/);
+  const realFluency = fluencyMatch ? parseFloat(fluencyMatch[1]) : 0;
+  if (pronResult) pronResult.fluencyScore = realFluency;
+
   return {
     text: data.DisplayText || best?.Display || '',
-    debug: `辨識狀態：${data.RecognitionStatus}｜有評分：${pronResult ? '是' : '否'}｜欄位：${bestKeys.slice(0,60)}`,
+    debug: `狀態：${data.RecognitionStatus}｜評分：${pronResult ? '是' : '否'}｜流暢：${realFluency}｜欄位：${bestKeys.slice(0,50)}`,
     pron: pronResult,
   };
 }
@@ -1527,7 +1590,8 @@ async function whisperSTT(blob, mimeType, s) {
   const form = new FormData();
   form.append('file', blob, `audio.${ext}`);
   form.append('model', 'whisper-1');
-  form.append('language', (s.lang || 'zh-TW').split('-')[0]);
+  const wLang = (LANG_CONFIG[s.lang] || LANG_CONFIG['zh-TW']).sttLang.split('-')[0];
+  form.append('language', wLang);
 
   const resp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
     method: 'POST',
@@ -1555,7 +1619,7 @@ async function chatWithGPT(userText) {
     body: JSON.stringify({
       model: 'gpt-4.1-mini',
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: getLangConfig().systemPrompt },
         ...chatMessages.slice(-12),
       ],
       max_tokens: 300,
@@ -1597,7 +1661,7 @@ async function speakText(text) {
       const resp = await fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.openaiKey}` },
-        body: JSON.stringify({ model: 'tts-1', input: text, voice: 'nova', speed: 0.9 }),
+        body: JSON.stringify({ model: 'tts-1', input: text, voice: getLangConfig().ttsVoice, speed: 0.9 }),
       });
       if (!resp.ok) throw new Error(`TTS ${resp.status}`);
       const blob = await resp.blob();
@@ -1613,7 +1677,7 @@ async function speakText(text) {
 
   // Fallback: Web Speech API
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = s.lang || 'zh-TW';
+  u.lang = getLangConfig().sttLang;
   u.rate = 0.88;
   speechSynthesis.speak(u);
 }
@@ -1663,6 +1727,17 @@ function scoreColor(s) {
 }
 
 // ─── UI Helpers ───────────────────────────────────────────────
+function updateHeader() {
+  const cfg = getLangConfig();
+  const titles = { 'zh-TW': '漢語通', 'zh-CN': '汉语通', 'en-US': 'LinguaAI', 'th-TH': 'ภาษาไทย AI' };
+  const chars =  { 'zh-TW': '漢', 'zh-CN': '汉', 'en-US': 'A', 'th-TH': 'ก' };
+  const s = getSettings();
+  const t = document.getElementById('h-title');
+  const f = document.getElementById('h-flag');
+  if (t) t.textContent = titles[s.lang] || '漢語通';
+  if (f) f.textContent = chars[s.lang] || '漢';
+}
+
 function toggleDebug() {
   debugMode = !debugMode;
   const btn = document.getElementById("btn-debug");
