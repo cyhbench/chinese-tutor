@@ -820,12 +820,21 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
       </div>
 
       <div class="field-group">
-        <label class="field-label">語言偏好</label>
+        <label class="field-label">我想學習的語言 <span class="req">*</span></label>
         <div style="display:flex;flex-wrap:wrap;gap:10px">
-          <label class="radio-item"><input type="radio" name="setup-lang" value="zh-TW" checked> 🇹🇼 繁體中文</label>
-          <label class="radio-item"><input type="radio" name="setup-lang" value="zh-CN"> 🇨🇳 簡體中文</label>
-          <label class="radio-item"><input type="radio" name="setup-lang" value="en-US"> 🇺🇸 English</label>
-          <label class="radio-item"><input type="radio" name="setup-lang" value="th-TH"> 🇹🇭 ภาษาไทย</label>
+          <label class="radio-item"><input type="radio" name="setup-learn-lang" value="zh-TW" checked> 🇹🇼 中文（繁體）</label>
+          <label class="radio-item"><input type="radio" name="setup-learn-lang" value="zh-CN"> 🇨🇳 中文（簡體）</label>
+          <label class="radio-item"><input type="radio" name="setup-learn-lang" value="en-US"> 🇺🇸 English</label>
+          <label class="radio-item"><input type="radio" name="setup-learn-lang" value="th-TH"> 🇹🇭 ภาษาไทย</label>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">App 介面語言</label>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <label class="radio-item"><input type="radio" name="setup-ui-lang" value="zh-TW" checked> 繁體中文</label>
+          <label class="radio-item"><input type="radio" name="setup-ui-lang" value="zh-CN"> 简体中文</label>
+          <label class="radio-item"><input type="radio" name="setup-ui-lang" value="en-US"> English</label>
         </div>
       </div>
 
@@ -845,7 +854,7 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
   <header id="header">
     <div class="h-logo">
       <div class="h-char">漢</div>
-      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v2.9</span>
+      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v3.1</span>
     </div>
     <button id="btn-debug" class="icon-btn" onclick="toggleDebug()" style="font-size:13px;color:var(--text-dim)">DEBUG</button>
     <button id="btn-open-settings" class="icon-btn" title="設定">⚙️</button>
@@ -953,18 +962,19 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
       </select>
     </div>
     <div class="field-group">
-      <label class="field-label">學習語言（AI 老師語言）</label>
+      <label class="field-label">我想學習的語言</label>
       <div style="display:flex;flex-wrap:wrap;gap:10px">
-        <label class="radio-item"><input type="radio" name="set-lang" value="zh-TW"> 🇹🇼 中文（繁）</label>
-        <label class="radio-item"><input type="radio" name="set-lang" value="zh-CN"> 🇨🇳 中文（簡）</label>
+        <label class="radio-item"><input type="radio" name="set-lang" value="zh-TW"> 🇹🇼 中文（繁體）</label>
+        <label class="radio-item"><input type="radio" name="set-lang" value="zh-CN"> 🇨🇳 中文（簡體）</label>
         <label class="radio-item"><input type="radio" name="set-lang" value="en-US"> 🇺🇸 English</label>
         <label class="radio-item"><input type="radio" name="set-lang" value="th-TH"> 🇹🇭 ภาษาไทย</label>
       </div>
     </div>
     <div class="field-group">
-      <label class="field-label">介面語言（App 顯示語言）</label>
+      <label class="field-label">App 介面語言</label>
       <div style="display:flex;flex-wrap:wrap;gap:10px">
         <label class="radio-item"><input type="radio" name="set-ui-lang" value="zh-TW"> 繁體中文</label>
+        <label class="radio-item"><input type="radio" name="set-ui-lang" value="zh-CN"> 简体中文</label>
         <label class="radio-item"><input type="radio" name="set-ui-lang" value="en-US"> English</label>
       </div>
     </div>
@@ -1076,6 +1086,51 @@ let practiceText = null;
 let currentAudio = null;
 let debugMode = false;
 
+// ─── UI Text (interface language) ─────────────────────────────
+const UI_TEXT = {
+  'zh-TW': {
+    settings: '設定', chat: '對話', practice: '練習', history: '記錄',
+    getSentence: '取得練習句子', nextSentence: '換一個句子', loading: '載入中…',
+    pleaseRead: '請朗讀以下句子', listenExample: '🔊 聽範例',
+    youSaid: '您說的：', pronScore: '發音評分',
+    accuracy: '準確度', fluency: '流暢度', fluencyEst: '估算',
+    noScore: '發音評分未返回', replay: '🔊 重播',
+    inputPlaceholder: '輸入文字，或按麥克風說話…',
+    holdToSpeak: '按住說話', recording: '錄音中，放開結束…', processing: '處理中…',
+    clearHistory: '清除全部學習記錄', save: '儲存設定',
+    noHistory: '還沒有學習記錄', noHistoryDesc: '開始對話或練習後，記錄會出現在這裡',
+  },
+  'zh-CN': {
+    settings: '设置', chat: '对话', practice: '练习', history: '记录',
+    getSentence: '获取练习句子', nextSentence: '换一个句子', loading: '加载中…',
+    pleaseRead: '请朗读以下句子', listenExample: '🔊 听示例',
+    youSaid: '您说的：', pronScore: '发音评分',
+    accuracy: '准确度', fluency: '流畅度', fluencyEst: '估算',
+    noScore: '发音评分未返回', replay: '🔊 重播',
+    inputPlaceholder: '输入文字，或按麦克风说话…',
+    holdToSpeak: '按住说话', recording: '录音中，放开结束…', processing: '处理中…',
+    clearHistory: '清除全部学习记录', save: '保存设置',
+    noHistory: '还没有学习记录', noHistoryDesc: '开始对话或练习后，记录会出现在这里',
+  },
+  'en-US': {
+    settings: 'Settings', chat: 'Chat', practice: 'Practice', history: 'History',
+    getSentence: 'Get Practice Sentence', nextSentence: 'Next Sentence', loading: 'Loading…',
+    pleaseRead: 'Please read aloud', listenExample: '🔊 Listen',
+    youSaid: 'You said: ', pronScore: 'Pronunciation Score',
+    accuracy: 'Accuracy', fluency: 'Fluency', fluencyEst: 'est.',
+    noScore: 'Score not returned', replay: '🔊 Replay',
+    inputPlaceholder: 'Type or use mic to speak…',
+    holdToSpeak: 'Hold to speak', recording: 'Recording… release to stop', processing: 'Processing…',
+    clearHistory: 'Clear all history', save: 'Save Settings',
+    noHistory: 'No history yet', noHistoryDesc: 'Start chatting or practicing to see records here',
+  },
+};
+
+function getUI() {
+  const s = getSettings();
+  return UI_TEXT[s.uiLang] || UI_TEXT['zh-TW'];
+}
+
 // ─── Lang helpers ─────────────────────────────────────────────
 function getLangConfig() {
   const s = getSettings();
@@ -1147,7 +1202,7 @@ function showApp() {
   showScreen('screen-app');
   updateHeader();
   if (chatMessages.length === 0) {
-    const welcome = '你好！我是小雅，你的中文口語練習夥伴 😊 你今天想聊什麼，或練習哪方面的中文呢？';
+    const welcome = getLangConfig().welcomeMsg || '你好！我是小雅 😊 你今天想練習什麼呢？';
     appendBubble('ai', welcome, null);
     addHistory({ role: 'ai', text: welcome });
     chatMessages.push({ role: 'assistant', content: welcome });
@@ -1158,15 +1213,16 @@ function showApp() {
 // ─── Setup ────────────────────────────────────────────────────
 function onSaveSetup() {
   const key = document.getElementById('inp-openai-key').value.trim();
-  if (!key || !key.startsWith('sk-')) {
-    alert('請輸入有效的 OpenAI API Key（以 sk- 開頭）');
+  if (!key) {
+    alert('請輸入 OpenAI API Key');
     return;
   }
   saveSettings({
     openaiKey: key,
     azureKey: document.getElementById('inp-azure-key').value.trim(),
     azureRegion: document.getElementById('inp-azure-region').value,
-    lang: document.querySelector('input[name="setup-lang"]:checked').value,
+    lang: document.querySelector('input[name="setup-learn-lang"]:checked').value,
+    uiLang: document.querySelector('input[name="setup-ui-lang"]:checked').value,
   });
   showApp();
 }
@@ -1181,6 +1237,9 @@ function openSettings() {
   if (radio) radio.checked = true;
   const uiRadio = document.querySelector(`input[name="set-ui-lang"][value="${s.uiLang || 'zh-TW'}"]`);
   if (uiRadio) uiRadio.checked = true;
+  // Update save button text
+  const saveBtn = document.getElementById('btn-save-settings');
+  if (saveBtn) saveBtn.textContent = (UI_TEXT[s.uiLang] || UI_TEXT['zh-TW']).save;
   document.getElementById('modal-overlay').classList.add('open');
   document.getElementById('modal-sheet').classList.add('open');
 }
@@ -1192,7 +1251,7 @@ function closeSettings() {
 
 function onSaveSettings() {
   const key = document.getElementById('set-openai-key').value.trim();
-  if (!key) { alert('OpenAI API Key 為必填'); return; }
+  if (!key) { alert('請輸入 OpenAI API Key'); return; }
   const newLang = document.querySelector('input[name="set-lang"]:checked').value;
   const newUiLang = document.querySelector('input[name="set-ui-lang"]:checked')?.value || 'zh-TW';
   const prevLang = getSettings().lang;
@@ -1791,23 +1850,33 @@ function scoreColor(s) {
 // ─── UI Helpers ───────────────────────────────────────────────
 function updateHeader() {
   const cfg = getLangConfig();
+  const ui = getUI();
   const s = getSettings();
+  // App title reflects learning language
   const titles = { 'zh-TW': '漢語通', 'zh-CN': '汉语通', 'en-US': 'LinguaAI', 'th-TH': 'ภาษาไทย AI' };
-  const chars =  { 'zh-TW': '漢', 'zh-CN': '汉', 'en-US': 'A', 'th-TH': 'ก' };
+  const chars  = { 'zh-TW': '漢', 'zh-CN': '汉', 'en-US': 'A', 'th-TH': 'ก' };
   const t = document.getElementById('h-title');
   const f = document.getElementById('h-flag');
   if (t) t.textContent = titles[s.lang] || '漢語通';
   if (f) f.textContent = chars[s.lang] || '漢';
-  // Update practice UI
+  // Bottom nav labels (interface language)
+  const navLabels = document.querySelectorAll('.nav-label');
+  const navKeys = ['chat', 'practice', 'history'];
+  navLabels.forEach((el, i) => { if (navKeys[i]) el.textContent = ui[navKeys[i]] || el.textContent; });
+  // Practice UI
   const intro = document.getElementById('prac-intro-text');
   if (intro) intro.textContent = cfg.pracIntro || '';
   const getSentBtn = document.getElementById('btn-get-sentence');
-  if (getSentBtn && getSentBtn.textContent !== (cfg.nextText || '換一個句子')) {
-    getSentBtn.textContent = cfg.getSentenceText || '取得練習句子';
-  }
+  if (getSentBtn) getSentBtn.textContent = ui.getSentence;
   const badge = document.getElementById('prac-lang-badge');
   if (badge) badge.textContent = cfg.flag + ' ' + cfg.label;
-  // Reset practice when language changes
+  // Input placeholder
+  const inp = document.getElementById('text-input');
+  if (inp) inp.placeholder = ui.inputPlaceholder;
+  // Mic button
+  const micSpan = document.querySelector('#btn-mic span:last-child');
+  if (micSpan) micSpan.textContent = ui.holdToSpeak;
+  // Reset practice panel
   document.getElementById('prac-card').classList.add('hidden');
   document.getElementById('prac-result').innerHTML = '';
   practiceText = null;
