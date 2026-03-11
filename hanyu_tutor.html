@@ -845,7 +845,7 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
   <header id="header">
     <div class="h-logo">
       <div class="h-char">漢</div>
-      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v2.4</span>
+      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v2.6</span>
     </div>
     <button id="btn-debug" class="icon-btn" onclick="toggleDebug()" style="font-size:13px;color:var(--text-dim)">DEBUG</button>
     <button id="btn-open-settings" class="icon-btn" title="設定">⚙️</button>
@@ -1563,18 +1563,31 @@ async function azureSTT(blob, mimeType, s, refText) {
     };
   }
 
-  // Deep-search FluencyScore anywhere in response
-  const rawJson = JSON.stringify(data);
-  const fluencyMatch = rawJson.match(/"FluencyScore"\s*:\s*([\d.]+)/);
-  const realFluency = fluencyMatch ? parseFloat(fluencyMatch[1]) : 0;
-  if (pronResult) pronResult.fluencyScore = realFluency;
+  // Azure REST API 不回傳 FluencyScore，改用單字時間間隔計算近似流暢度
+  // 邏輯：實際說話時間 / 總時長，停頓越少分數越高
+  let calcFluency = 0;
+  if (best && best.Words && best.Words.length > 1) {
+    const words = best.Words;
+    const totalSpan = (words[words.length-1].Offset + words[words.length-1].Duration) - words[0].Offset;
+    let speechTime = words.reduce((sum, w) => sum + (w.Duration || 0), 0);
+    // 加入容忍度（正常換氣停頓），停頓 < 300ms 視為流暢
+    let penaltyGap = 0;
+    for (let i = 1; i < words.length; i++) {
+      const gap = words[i].Offset - (words[i-1].Offset + words[i-1].Duration);
+      if (gap > 3000000) penaltyGap += (gap - 3000000); // 超過 300ms 的停頓才扣分
+    }
+    const effectiveSpeech = Math.max(0, speechTime - penaltyGap * 0.5);
+    calcFluency = totalSpan > 0 ? Math.min(100, Math.round((effectiveSpeech / totalSpan) * 130)) : 0;
+  } else if (best && best.Words && best.Words.length === 1) {
+    calcFluency = 90; // 單字視為流暢
+  }
+  if (pronResult) pronResult.fluencyScore = calcFluency;
 
-  // Debug: show full raw response (first 400 chars)
-  const rawPreview = rawJson.slice(0, 400);
+  const rawPreview = JSON.stringify(data, null, 2);
 
   return {
     text: data.DisplayText || best?.Display || '',
-    debug: `狀態：${data.RecognitionStatus}｜流暢：${realFluency}｜RAW：${rawPreview}`,
+    debug: `狀態：${data.RecognitionStatus}｜流暢(計算)：${calcFluency}｜\n\nRAW JSON：\n${rawPreview}`,
     pron: pronResult,
   };
 }
