@@ -308,7 +308,7 @@ select.field-input {
       <div class="brand-icon" id="setup-icon">語</div>
       <div>
         <div class="brand-name">LinguaAI</div>
-        <div class="brand-ver">v4.0 · AI 語言學習助手</div>
+        <div class="brand-ver">v4.1 · AI 語言學習助手</div>
       </div>
     </div>
 
@@ -376,7 +376,7 @@ select.field-input {
     <div class="hdr-left">
       <div class="hdr-icon" id="hdr-icon">語</div>
       <span class="hdr-title" id="hdr-title">LinguaAI</span>
-      <span class="hdr-ver">v4.0</span>
+      <span class="hdr-ver">v4.1</span>
     </div>
     <div class="hdr-right">
       <button id="btn-debug" class="icon-btn" onclick="toggleDebug()">DEBUG</button>
@@ -515,13 +515,13 @@ select.field-input {
 'use strict';
 
 // ─── Version ─────────────────────────────────────────
-const VER = 'v4.0';
+const VER = 'v4.1';
 
 // ─── Language configs ─────────────────────────────────
 const LANG = {
   'zh-TW': {
     flag: '🇹🇼', char: '漢', appTitle: '漢語通',
-    sttLang: 'zh-TW', ttsVoice: 'shimmer',
+    sttLang: 'zh-TW', ttsVoice: 'shimmer', azureTtsVoice: 'zh-TW-HsiaoChenNeural',
     welcomeMsg: '你好！我是小雅，你的中文口語練習夥伴 😊 你今天想聊什麼，或練習哪方面的中文呢？',
     systemPrompt: `你是小雅，一位親切、耐心的繁體中文口語教師。
 • 用繁體中文與學習者自然對話，幫助練習口語表達
@@ -533,7 +533,7 @@ const LANG = {
   },
   'zh-CN': {
     flag: '🇨🇳', char: '汉', appTitle: '汉语通',
-    sttLang: 'zh-CN', ttsVoice: 'shimmer',
+    sttLang: 'zh-CN', ttsVoice: 'shimmer', azureTtsVoice: 'zh-CN-XiaoxiaoNeural',
     welcomeMsg: '你好！我是小雅，你的中文口语练习伙伴 😊 你今天想聊什么，或者练习哪方面的中文呢？',
     systemPrompt: `你是小雅，一位亲切、耐心的简体中文口语教师。
 • 用简体中文与学习者自然对话，帮助练习口语表达
@@ -544,7 +544,7 @@ const LANG = {
   },
   'en-US': {
     flag: '🇺🇸', char: 'A', appTitle: 'LinguaAI',
-    sttLang: 'en-US', ttsVoice: 'nova',
+    sttLang: 'en-US', ttsVoice: 'nova', azureTtsVoice: 'en-US-JennyNeural',
     welcomeMsg: "Hi! I'm Aria, your English conversation tutor 😊 What would you like to talk about or practice today?",
     systemPrompt: `You are Aria, a friendly and patient English conversation tutor.
 • Have natural conversations to help learners practice spoken English
@@ -556,7 +556,7 @@ const LANG = {
   },
   'th-TH': {
     flag: '🇹🇭', char: 'ก', appTitle: 'ภาษาไทย AI',
-    sttLang: 'th-TH', ttsVoice: 'nova',
+    sttLang: 'th-TH', ttsVoice: 'nova', azureTtsVoice: 'th-TH-PremwadeeNeural',
     welcomeMsg: 'สวัสดี! ฉันชื่อนุ่น ครูสอนภาษาไทยของคุณ 😊 วันนี้อยากคุยเรื่องอะไร หรืออยากฝึกภาษาไทยเรื่องไหนบ้าง?',
     systemPrompt: `คุณคือ นุ่น ครูสอนภาษาไทยที่เป็นมิตรและอดทน
 • สนทนาภาษาไทยอย่างเป็นธรรมชาติกับผู้เรียน
@@ -1129,7 +1129,45 @@ async function callChat(userText) {
 
 // ─── TTS ───────────────────────────────────────────────
 function stripEmoji(text) {
-  return text.replace(/[\u{1F000}-\u{1FFFF}]|\p{Emoji_Presentation}/gu, '').replace(/\s{2,}/g,' ').trim();
+  return text.replace(/[☀-➿︀-️]/g, '').replace(/\s{2,}/g,' ').trim();
+}
+
+function playBlob(blob) {
+  const url = URL.createObjectURL(blob);
+  currentAudio = new Audio(url);
+  currentAudio.onended = () => URL.revokeObjectURL(url);
+  currentAudio.play();
+}
+
+async function azureTTS(text) {
+  // Azure SSML TTS — best quality for CJK and Thai
+  const region = cfg.azureRegion || 'southeastasia';
+  const voice  = lang().azureTtsVoice;
+  const ssml = `<speak version='1.0' xml:lang='${lang().sttLang}'><voice name='${voice}'><prosody rate='0.95'>${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</prosody></voice></speak>`;
+  const res = await fetch(
+    `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
+    {
+      method: 'POST',
+      headers: {
+        'Ocp-Apim-Subscription-Key': cfg.azureKey,
+        'Content-Type': 'application/ssml+xml',
+        'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
+      },
+      body: ssml,
+    }
+  );
+  if (!res.ok) throw new Error('Azure TTS ' + res.status);
+  return await res.blob();
+}
+
+async function openaiTTS(text) {
+  const res = await fetch('https://api.openai.com/v1/audio/speech', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','Authorization':`Bearer ${cfg.openaiKey}`},
+    body: JSON.stringify({model:'tts-1', input:text, voice:lang().ttsVoice, speed:0.9}),
+  });
+  if (!res.ok) throw new Error('OpenAI TTS ' + res.status);
+  return await res.blob();
 }
 
 async function speak(rawText) {
@@ -1137,21 +1175,15 @@ async function speak(rawText) {
   if (!text) return;
   if (currentAudio) { currentAudio.pause(); currentAudio = null; }
   speechSynthesis.cancel();
+
+  // Priority: Azure TTS (best quality) → OpenAI TTS → Web Speech API
+  if (cfg.azureKey) {
+    try { playBlob(await azureTTS(text)); return; }
+    catch(e) { console.warn('Azure TTS failed, trying OpenAI:', e.message); }
+  }
   if (cfg.openaiKey) {
-    try {
-      const res = await fetch('https://api.openai.com/v1/audio/speech', {
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':`Bearer ${cfg.openaiKey}`},
-        body: JSON.stringify({model:'tts-1', input:text, voice:lang().ttsVoice, speed:0.9}),
-      });
-      if (!res.ok) throw new Error('TTS ' + res.status);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      currentAudio = new Audio(url);
-      currentAudio.onended = () => URL.revokeObjectURL(url);
-      currentAudio.play();
-      return;
-    } catch(e) { console.warn('TTS fallback:', e.message); }
+    try { playBlob(await openaiTTS(text)); return; }
+    catch(e) { console.warn('OpenAI TTS failed, using Web Speech:', e.message); }
   }
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang().sttLang;
