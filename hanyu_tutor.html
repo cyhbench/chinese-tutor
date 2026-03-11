@@ -790,7 +790,8 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
       <div class="logo-char">漢</div>
       <div class="logo-info">
         <span class="logo-title">漢語通</span>
-        <span class="logo-sub">AI 中文口語學習助手</span>
+        <span class="logo-sub">AI 語言學習助手</span>
+        <span style="font-size:10px;color:var(--text-dim);margin-top:2px;display:block">v3.3</span>
       </div>
     </div>
 
@@ -838,7 +839,7 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
         </div>
       </div>
 
-      <button id="btn-save-setup" class="btn-primary">開始使用 →</button>
+      <button id="btn-save-setup" class="btn-primary" onclick="onSaveSetup()">開始使用 →</button>
     </div>
 
     <p class="setup-note">沒有 Azure Key 也可以使用，語音辨識會改用 OpenAI Whisper，但無法顯示發音評分。</p>
@@ -854,7 +855,7 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
   <header id="header">
     <div class="h-logo">
       <div class="h-char">漢</div>
-      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v3.2</span>
+      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v3.3</span>
     </div>
     <button id="btn-debug" class="icon-btn" onclick="toggleDebug()" style="font-size:13px;color:var(--text-dim)">DEBUG</button>
     <button id="btn-open-settings" class="icon-btn" title="設定">⚙️</button>
@@ -1165,8 +1166,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showScreen('screen-setup');
   }
 
-  // Setup save
-  document.getElementById('btn-save-setup').onclick = onSaveSetup;
+  // Setup save (bound directly in HTML)
 
   // Settings modal
   document.getElementById('btn-open-settings').onclick = openSettings;
