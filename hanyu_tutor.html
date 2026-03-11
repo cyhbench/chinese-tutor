@@ -845,7 +845,7 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
   <header id="header">
     <div class="h-logo">
       <div class="h-char">漢</div>
-      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v2.8</span>
+      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v2.9</span>
     </div>
     <button id="btn-debug" class="icon-btn" onclick="toggleDebug()" style="font-size:13px;color:var(--text-dim)">DEBUG</button>
     <button id="btn-open-settings" class="icon-btn" title="設定">⚙️</button>
@@ -953,12 +953,19 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
       </select>
     </div>
     <div class="field-group">
-      <label class="field-label">語言偏好</label>
+      <label class="field-label">學習語言（AI 老師語言）</label>
       <div style="display:flex;flex-wrap:wrap;gap:10px">
-        <label class="radio-item"><input type="radio" name="set-lang" value="zh-TW"> 🇹🇼 繁體中文</label>
-        <label class="radio-item"><input type="radio" name="set-lang" value="zh-CN"> 🇨🇳 簡體中文</label>
+        <label class="radio-item"><input type="radio" name="set-lang" value="zh-TW"> 🇹🇼 中文（繁）</label>
+        <label class="radio-item"><input type="radio" name="set-lang" value="zh-CN"> 🇨🇳 中文（簡）</label>
         <label class="radio-item"><input type="radio" name="set-lang" value="en-US"> 🇺🇸 English</label>
         <label class="radio-item"><input type="radio" name="set-lang" value="th-TH"> 🇹🇭 ภาษาไทย</label>
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">介面語言（App 顯示語言）</label>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        <label class="radio-item"><input type="radio" name="set-ui-lang" value="zh-TW"> 繁體中文</label>
+        <label class="radio-item"><input type="radio" name="set-ui-lang" value="en-US"> English</label>
       </div>
     </div>
     <button class="btn-primary" id="btn-save-settings">儲存設定</button>
@@ -982,6 +989,7 @@ const LANG_CONFIG = {
     label: '中文',
     flag: '🇹🇼',
     pracPrompt: '請提供一個適合初中級中文學習者的口語練習句子。要求：日常生活相關，10-20個繁體中文字。只回覆句子本身，不要任何解釋或多餘文字。',
+    welcomeMsg: '你好！我是小雅，你的中文口語練習夥伴 😊 你今天想聊什麼，或練習哪方面的中文呢？',
     getSentenceText: '取得練習句子',
     nextText: '換一個句子',
     loadingText: '載入中…',
@@ -1000,6 +1008,7 @@ const LANG_CONFIG = {
     label: '中文',
     flag: '🇨🇳',
     pracPrompt: '请提供一个适合初中级中文学习者的口语练习句子。要求：日常生活相关，10-20个简体中文字。只回复句子本身，不要任何解释或多余文字。',
+    welcomeMsg: '你好！我是小雅，你的中文口语练习伙伴 😊 你今天想聊什么，或者练习哪方面的中文呢？',
     getSentenceText: '获取练习句子',
     nextText: '换一个句子',
     loadingText: '加载中…',
@@ -1017,6 +1026,7 @@ const LANG_CONFIG = {
     label: 'English',
     flag: '🇺🇸',
     pracPrompt: 'Provide one short English speaking practice sentence for intermediate learners. Requirements: daily life topic, 8-15 words. Reply with the sentence only, no explanations or extra text.',
+    welcomeMsg: 'Hi! I'm Aria, your English conversation tutor 😊 What would you like to talk about or practice today?',
     getSentenceText: 'Get Practice Sentence',
     nextText: 'Next Sentence',
     loadingText: 'Loading…',
@@ -1035,6 +1045,7 @@ const LANG_CONFIG = {
     label: 'ภาษาไทย',
     flag: '🇹🇭',
     pracPrompt: 'กรุณาให้ประโยคฝึกพูดภาษาไทยสำหรับผู้เรียนระดับกลาง 1 ประโยค เกี่ยวกับชีวิตประจำวัน 5-12 คำ ตอบเฉพาะประโยคเท่านั้น',
+    welcomeMsg: 'สวัสดี! ฉันชื่อนุ่น ครูสอนภาษาไทยของคุณ 😊 วันนี้อยากคุยเรื่องอะไร หรืออยากฝึกภาษาไทยเรื่องใดบ้าง?',
     getSentenceText: 'รับประโยคฝึก',
     nextText: 'ประโยคถัดไป',
     loadingText: 'กำลังโหลด…',
@@ -1168,6 +1179,8 @@ function openSettings() {
   document.getElementById('set-azure-region').value = s.azureRegion || 'eastasia';
   const radio = document.querySelector(`input[name="set-lang"][value="${s.lang || 'zh-TW'}"]`);
   if (radio) radio.checked = true;
+  const uiRadio = document.querySelector(`input[name="set-ui-lang"][value="${s.uiLang || 'zh-TW'}"]`);
+  if (uiRadio) uiRadio.checked = true;
   document.getElementById('modal-overlay').classList.add('open');
   document.getElementById('modal-sheet').classList.add('open');
 }
@@ -1180,16 +1193,29 @@ function closeSettings() {
 function onSaveSettings() {
   const key = document.getElementById('set-openai-key').value.trim();
   if (!key) { alert('OpenAI API Key 為必填'); return; }
+  const newLang = document.querySelector('input[name="set-lang"]:checked').value;
+  const newUiLang = document.querySelector('input[name="set-ui-lang"]:checked')?.value || 'zh-TW';
+  const prevLang = getSettings().lang;
   saveSettings({
     openaiKey: key,
     azureKey: document.getElementById('set-azure-key').value.trim(),
     azureRegion: document.getElementById('set-azure-region').value,
-    lang: document.querySelector('input[name="set-lang"]:checked').value,
+    lang: newLang,
+    uiLang: newUiLang,
   });
-  chatMessages = []; // reset chat on lang change
   closeSettings();
   updateHeader();
-  showToast('設定已儲存，對話已重置');
+  if (newLang !== prevLang) {
+    chatMessages = [];
+    document.getElementById('chat-list').innerHTML = '';
+    const welcome = getLangConfig().welcomeMsg;
+    appendBubble('ai', welcome, null);
+    addHistory({ role: 'ai', text: welcome });
+    chatMessages.push({ role: 'assistant', content: welcome });
+    speakText(welcome);
+    switchTab('chat');
+  }
+  showToast('設定已儲存');
 }
 
 function confirmClearHistory() {
@@ -1418,23 +1444,18 @@ async function handleAudioBlob(blob, mimeType) {
   let recognizedText = null;
   let pronData = null;
 
-  // 診斷資訊
-  const debugInfo = `[診斷] 音檔大小：${blob.size} bytes｜格式：${mimeType}｜Azure：${s.azureKey ? '有' : '無'}`;
-  if (debugMode) appendBubble('sys', debugInfo, null);
+  // 診斷資訊（只顯示在各自頁籤，不污染對話）
+  const debugInfo = `音檔：${blob.size}B｜格式：${mimeType.split(';')[0]}｜Azure：${s.azureKey ? '有' : '無'}`;
 
   try {
     const isPractice = currentTab === 'practice' && practiceText;
     let result = null;
     if (s.azureKey) {
-      if (debugMode) appendBubble('sys', '[診斷] 送出至 Azure...', null);
       result = await azureSTT(blob, mimeType, s, isPractice ? practiceText : '');
-      appendBubble('sys', `[診斷] Azure 回傳文字：「${result.text || '（空）'}」`, null);
       recognizedText = result.text;
       pronData = result.pron;
     } else {
-      if (debugMode) appendBubble('sys', '[診斷] 送出至 Whisper...', null);
       recognizedText = await whisperSTT(blob, mimeType, s);
-      appendBubble('sys', `[診斷] Whisper 回傳：「${recognizedText || '（空）'}」`, null);
     }
 
     if (!recognizedText || !recognizedText.trim()) {
@@ -1448,6 +1469,7 @@ async function handleAudioBlob(blob, mimeType) {
       isProcessing = false;
       setUIProcessing(false);
     } else {
+      if (debugMode) appendBubble('sys', `[診斷] ${debugInfo}`, null);
       // 先解除 isProcessing，讓 handleUserInput 可以正常執行
       isProcessing = false;
       setUIProcessing(false);
