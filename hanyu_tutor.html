@@ -845,7 +845,7 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
   <header id="header">
     <div class="h-logo">
       <div class="h-char">漢</div>
-      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v2.7</span>
+      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v2.8</span>
     </div>
     <button id="btn-debug" class="icon-btn" onclick="toggleDebug()" style="font-size:13px;color:var(--text-dim)">DEBUG</button>
     <button id="btn-open-settings" class="icon-btn" title="設定">⚙️</button>
@@ -863,7 +863,7 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
     <!-- Practice Pane -->
     <div id="pane-practice" class="tab-pane">
       <div class="prac-intro">
-        🎯 AI 老師會提供一個練習句子，請大聲朗讀。如果您有設定 Azure Key，系統會分析您的發音並給出評分。
+        <span id="prac-intro-text">🎯 AI 老師會提供一個練習句子，請大聲朗讀。如果您有設定 Azure Key，系統會分析您的發音並給出評分。</span>
       </div>
 
       <div id="prac-card" class="prac-sentence-card hidden">
@@ -873,6 +873,7 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
       </div>
 
       <button id="btn-get-sentence" class="btn-sec">取得練習句子</button>
+      <div id="prac-lang-badge" style="font-size:12px;color:var(--gold);text-align:center;margin-top:-6px"></div>
 
       <div id="prac-result"></div>
     </div>
@@ -980,6 +981,11 @@ const LANG_CONFIG = {
   'zh-TW': {
     label: '中文',
     flag: '🇹🇼',
+    pracPrompt: '請提供一個適合初中級中文學習者的口語練習句子。要求：日常生活相關，10-20個繁體中文字。只回覆句子本身，不要任何解釋或多餘文字。',
+    getSentenceText: '取得練習句子',
+    nextText: '換一個句子',
+    loadingText: '載入中…',
+    pracIntro: '🎯 AI 老師提供練習句子，請大聲朗讀。設定 Azure Key 後可分析發音評分。',
     sttLang: 'zh-TW',
     ttsVoice: 'shimmer',
     azureTTSVoice: 'zh-TW-HsiaoChenNeural',
@@ -993,6 +999,11 @@ const LANG_CONFIG = {
   'zh-CN': {
     label: '中文',
     flag: '🇨🇳',
+    pracPrompt: '请提供一个适合初中级中文学习者的口语练习句子。要求：日常生活相关，10-20个简体中文字。只回复句子本身，不要任何解释或多余文字。',
+    getSentenceText: '获取练习句子',
+    nextText: '换一个句子',
+    loadingText: '加载中…',
+    pracIntro: '🎯 AI 老师提供练习句子，请大声朗读。设置 Azure Key 后可分析发音评分。',
     sttLang: 'zh-CN',
     ttsVoice: 'shimmer',
     azureTTSVoice: 'zh-CN-XiaoxiaoNeural',
@@ -1005,6 +1016,11 @@ const LANG_CONFIG = {
   'en-US': {
     label: 'English',
     flag: '🇺🇸',
+    pracPrompt: 'Provide one short English speaking practice sentence for intermediate learners. Requirements: daily life topic, 8-15 words. Reply with the sentence only, no explanations or extra text.',
+    getSentenceText: 'Get Practice Sentence',
+    nextText: 'Next Sentence',
+    loadingText: 'Loading…',
+    pracIntro: '🎯 Your AI tutor will give you a sentence to read aloud. With Azure Key, pronunciation will be scored.',
     sttLang: 'en-US',
     ttsVoice: 'nova',
     azureTTSVoice: 'en-US-JennyNeural',
@@ -1018,6 +1034,11 @@ const LANG_CONFIG = {
   'th-TH': {
     label: 'ภาษาไทย',
     flag: '🇹🇭',
+    pracPrompt: 'กรุณาให้ประโยคฝึกพูดภาษาไทยสำหรับผู้เรียนระดับกลาง 1 ประโยค เกี่ยวกับชีวิตประจำวัน 5-12 คำ ตอบเฉพาะประโยคเท่านั้น',
+    getSentenceText: 'รับประโยคฝึก',
+    nextText: 'ประโยคถัดไป',
+    loadingText: 'กำลังโหลด…',
+    pracIntro: '🎯 ครู AI จะให้ประโยคเพื่อฝึกอ่านออกเสียง ตั้งค่า Azure Key เพื่อวิเคราะห์การออกเสียง',
     sttLang: 'th-TH',
     ttsVoice: 'nova',
     azureTTSVoice: 'th-TH-PremwadeeNeural',
@@ -1296,7 +1317,8 @@ function buildPronCard(data) {
 // ─── Practice Mode ────────────────────────────────────────────
 async function onGetSentence() {
   const btn = document.getElementById('btn-get-sentence');
-  btn.textContent = '載入中…';
+  const cfg = getLangConfig();
+  btn.textContent = cfg.loadingText || '載入中…';
   btn.disabled = true;
 
   try {
@@ -1308,9 +1330,9 @@ async function onGetSentence() {
         model: 'gpt-4.1-mini',
         messages: [{
           role: 'user',
-          content: '請提供一個適合初中級中文學習者的口語練習句子。要求：日常生活相關，10-20個字。只回覆句子本身，不要任何解釋、標點以外的符號或其他文字。',
+          content: cfg.pracPrompt,
         }],
-        max_tokens: 60,
+        max_tokens: 80,
         temperature: 0.9,
       }),
     });
@@ -1322,12 +1344,12 @@ async function onGetSentence() {
     document.getElementById('prac-text').textContent = practiceText;
     document.getElementById('prac-card').classList.remove('hidden');
     document.getElementById('prac-result').innerHTML = '';
-    btn.textContent = '換一個句子';
+    btn.textContent = cfg.nextText || '換一個句子';
 
     await speakText(practiceText);
   } catch (err) {
     alert('取得句子失敗：' + err.message);
-    btn.textContent = '取得練習句子';
+    btn.textContent = cfg.getSentenceText || '取得練習句子';
   } finally {
     btn.disabled = false;
   }
@@ -1747,13 +1769,26 @@ function scoreColor(s) {
 // ─── UI Helpers ───────────────────────────────────────────────
 function updateHeader() {
   const cfg = getLangConfig();
+  const s = getSettings();
   const titles = { 'zh-TW': '漢語通', 'zh-CN': '汉语通', 'en-US': 'LinguaAI', 'th-TH': 'ภาษาไทย AI' };
   const chars =  { 'zh-TW': '漢', 'zh-CN': '汉', 'en-US': 'A', 'th-TH': 'ก' };
-  const s = getSettings();
   const t = document.getElementById('h-title');
   const f = document.getElementById('h-flag');
   if (t) t.textContent = titles[s.lang] || '漢語通';
   if (f) f.textContent = chars[s.lang] || '漢';
+  // Update practice UI
+  const intro = document.getElementById('prac-intro-text');
+  if (intro) intro.textContent = cfg.pracIntro || '';
+  const getSentBtn = document.getElementById('btn-get-sentence');
+  if (getSentBtn && getSentBtn.textContent !== (cfg.nextText || '換一個句子')) {
+    getSentBtn.textContent = cfg.getSentenceText || '取得練習句子';
+  }
+  const badge = document.getElementById('prac-lang-badge');
+  if (badge) badge.textContent = cfg.flag + ' ' + cfg.label;
+  // Reset practice when language changes
+  document.getElementById('prac-card').classList.add('hidden');
+  document.getElementById('prac-result').innerHTML = '';
+  practiceText = null;
 }
 
 function toggleDebug() {
