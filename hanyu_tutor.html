@@ -308,7 +308,7 @@ select.field-input {
       <div class="brand-icon" id="setup-icon">語</div>
       <div>
         <div class="brand-name">LinguaAI</div>
-        <div class="brand-ver">v4.2 · AI 語言學習助手</div>
+        <div class="brand-ver">v4.3 · AI 語言學習助手</div>
       </div>
     </div>
 
@@ -376,7 +376,7 @@ select.field-input {
     <div class="hdr-left">
       <div class="hdr-icon" id="hdr-icon">語</div>
       <span class="hdr-title" id="hdr-title">LinguaAI</span>
-      <span class="hdr-ver">v4.2</span>
+      <span class="hdr-ver">v4.3</span>
     </div>
     <div class="hdr-right">
       <button id="btn-debug" class="icon-btn" onclick="toggleDebug()">DEBUG</button>
@@ -515,7 +515,7 @@ select.field-input {
 'use strict';
 
 // ─── Version ─────────────────────────────────────────
-const VER = 'v4.2';
+const VER = 'v4.3';
 
 // ─── Language configs ─────────────────────────────────
 const LANG = {
@@ -994,16 +994,16 @@ async function handleAudio(blob, mime) {
     if (isPrac) {
       showPracResult(recognized, pronData, debugMsg);
       pushHist({role:'user', text:recognized, pron: pronData || undefined, isPrac:true});
+      setBusy(false);
     } else {
       if (debugMode) addBubble('sys', '[DEBUG] ' + debugMsg, null);
+      setBusy(false); // release before handleText checks isBusy
       await handleText(recognized, pronData);
-      return; // handleText calls setBusy(false)
     }
   } catch(e) {
     const msg = '⚠️ ' + e.message;
     if (isPrac) showPracResult('', null, debugMsg + '\n' + msg);
     else addBubble('sys', msg, null);
-  } finally {
     setBusy(false);
   }
 }
