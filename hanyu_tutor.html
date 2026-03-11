@@ -854,7 +854,7 @@ select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='htt
   <header id="header">
     <div class="h-logo">
       <div class="h-char">漢</div>
-      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v3.1</span>
+      <span class="h-title">漢語通</span><span style="font-size:10px;color:var(--text-dim);margin-left:6px;letter-spacing:0.04em;">v3.2</span>
     </div>
     <button id="btn-debug" class="icon-btn" onclick="toggleDebug()" style="font-size:13px;color:var(--text-dim)">DEBUG</button>
     <button id="btn-open-settings" class="icon-btn" title="設定">⚙️</button>
@@ -1212,19 +1212,25 @@ function showApp() {
 
 // ─── Setup ────────────────────────────────────────────────────
 function onSaveSetup() {
-  const key = document.getElementById('inp-openai-key').value.trim();
-  if (!key) {
-    alert('請輸入 OpenAI API Key');
-    return;
+  try {
+    const key = document.getElementById('inp-openai-key').value.trim();
+    if (!key) {
+      alert('請輸入 OpenAI API Key');
+      return;
+    }
+    const learnLangEl = document.querySelector('input[name="setup-learn-lang"]:checked');
+    const uiLangEl = document.querySelector('input[name="setup-ui-lang"]:checked');
+    saveSettings({
+      openaiKey: key,
+      azureKey: document.getElementById('inp-azure-key').value.trim(),
+      azureRegion: document.getElementById('inp-azure-region').value,
+      lang: learnLangEl ? learnLangEl.value : 'zh-TW',
+      uiLang: uiLangEl ? uiLangEl.value : 'zh-TW',
+    });
+    showApp();
+  } catch(e) {
+    alert('發生錯誤：' + e.message);
   }
-  saveSettings({
-    openaiKey: key,
-    azureKey: document.getElementById('inp-azure-key').value.trim(),
-    azureRegion: document.getElementById('inp-azure-region').value,
-    lang: document.querySelector('input[name="setup-learn-lang"]:checked').value,
-    uiLang: document.querySelector('input[name="setup-ui-lang"]:checked').value,
-  });
-  showApp();
 }
 
 // ─── Settings Modal ───────────────────────────────────────────
