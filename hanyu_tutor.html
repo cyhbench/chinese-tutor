@@ -308,7 +308,7 @@ select.field-input {
       <div class="brand-icon" id="setup-icon">語</div>
       <div>
         <div class="brand-name">LinguaAI</div>
-        <div class="brand-ver">v4.1 · AI 語言學習助手</div>
+        <div class="brand-ver">v4.2 · AI 語言學習助手</div>
       </div>
     </div>
 
@@ -376,7 +376,7 @@ select.field-input {
     <div class="hdr-left">
       <div class="hdr-icon" id="hdr-icon">語</div>
       <span class="hdr-title" id="hdr-title">LinguaAI</span>
-      <span class="hdr-ver">v4.1</span>
+      <span class="hdr-ver">v4.2</span>
     </div>
     <div class="hdr-right">
       <button id="btn-debug" class="icon-btn" onclick="toggleDebug()">DEBUG</button>
@@ -515,7 +515,7 @@ select.field-input {
 'use strict';
 
 // ─── Version ─────────────────────────────────────────
-const VER = 'v4.1';
+const VER = 'v4.2';
 
 // ─── Language configs ─────────────────────────────────
 const LANG = {
@@ -1129,7 +1129,14 @@ async function callChat(userText) {
 
 // ─── TTS ───────────────────────────────────────────────
 function stripEmoji(text) {
-  return text.replace(/[☀-➿︀-️]/g, '').replace(/\s{2,}/g,' ').trim();
+  // Remove emoji and special symbols comprehensively
+  return text
+    .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')   // supplemental symbols, CJK compat
+    .replace(/[\u{2600}-\u{27BF}]/gu, '')       // misc symbols, dingbats
+    .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')     // misc/transport/people/nature
+    .replace(/[\uFE00-\uFE0F]/g, '')            // variation selectors
+    .replace(/[\u200D]/g, '')                   // zero-width joiner
+    .replace(/\s{2,}/g, ' ').trim();
 }
 
 function playBlob(blob) {
