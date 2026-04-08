@@ -835,8 +835,8 @@ function addBubble(role, text, pronData) {
   let html = `<div class="bubble-body">${esc(text)}</div>`;
   if (pronData) html += buildPronCard(pronData);
   if (role === 'ai') {
-    const t = text.replace(/'/g,"&#39;").replace(/\n/g,' ');
-    html += `<button class="btn-replay" onclick="speak('${t}')">${ui().replay}</button>`;
+    const t = JSON.stringify(text).replace(/"/g, '&quot;');
+    html += `<button class="btn-replay" onclick="speak(${t})">${ui().replay}</button>`;
   }
   html += `<div class="bubble-time">${ts}</div>`;
   el.innerHTML = html;
@@ -988,6 +988,7 @@ async function handleAudio(blob, mime) {
       if (isPrac) showPracResult('', null, debugMsg);
       else if (debugMode) addBubble('sys', '[DEBUG] ' + debugMsg + '\n⚠️ ' + ui().noAudio, null);
       else addBubble('sys', '⚠️ ' + ui().noAudio, null);
+      setBusy(false);
       return;
     }
 
@@ -1131,11 +1132,12 @@ async function callChat(userText) {
 function stripEmoji(text) {
   // Remove emoji and special symbols comprehensively
   return text
-    .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')   // supplemental symbols, CJK compat
+    .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')   // supplemental symbols (includes all emoji blocks)
+    .replace(/[\u{1FA00}-\u{1FAFF}]/gu, '')    // extended pictographic (chess, science, etc.)
     .replace(/[\u{2600}-\u{27BF}]/gu, '')       // misc symbols, dingbats
-    .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')     // misc/transport/people/nature
     .replace(/[\uFE00-\uFE0F]/g, '')            // variation selectors
     .replace(/[\u200D]/g, '')                   // zero-width joiner
+    .replace(/[\u{E0000}-\u{E007F}]/gu, '')    // tags (used in flag emoji sequences)
     .replace(/\s{2,}/g, ' ').trim();
 }
 
